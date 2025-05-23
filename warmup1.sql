@@ -8,6 +8,9 @@ CREATE FILE FORMAT _woodchuck_global_tools.file_formats.main_json_format
 CREATE OR REPLACE STAGE _woodchuck_global_tools.internal_stages.stage_json_prods
     FILE_FORMAT = _woodchuck_global_tools.file_formats.main_json_format
 
+SELECT *
+FROM @_woodchuck_global_tools.internal_stages.stage_json_prods/customers_data.json;
+
 LIST @_woodchuck_global_tools.internal_stages.stage_json_prods
 
 COMMENT ON STAGE _woodchuck_global_tools.internal_stages.stage_json_prods IS 'A stage for storing customers and orders;'
@@ -27,6 +30,72 @@ CREATE OR REPLACE TEMP TABLE raw_orders_json(
     item array
 );
 
+/*
+
+Тука пиша код от упр-то
+
+
+COPY INTO raw_orders_json(item)
+    FROM @_woodchuck_global_tools.internal_stages.stage_json_prods/customers_data.json    
+FILE_FORMAT = (FORMAT_NAME = '_woodchuck_global_tools.file_formats.main_json_format');
+
+SELECT * FROM raw_orders_json;
+
+TRUNCATE TABLE raw_orders_json;
+
+CREATE SCHEMA _woodchuck_global_tools.tasks;
+
+
+
+CREATE TASK WOODCHUCK_JSON_CUSTOMER_ORDERS_DB.PUBLIC.copy_customer_data_every_2min
+    WAREHOUSE = WOODCHUCK__WH
+    SCHEDULE = 'USING CRON 0/2 * * * * UTC'
+AS
+    BEGIN
+        COPY INTO WOODCHUCK_JSON_CUSTOMER_ORDERS_DB.RAW_DATA.raw_orders_json(item)
+        FROM            @_woodchuck_global_tools.internal_stages.stage_json_prods/customers_data.json    
+        FILE_FORMAT = (FORMAT_NAME = '_woodchuck_global_tools.file_formats.main_json_format');
+
+        TRUNCATE TABLE WOODCHUCK_JSON_CUSTOMER_ORDERS_DB.RAW_DATA.raw_orders_json;
+    
+    END;
+
+USE SCHEMA WOODCHUCK_JSON_CUSTOMER_ORDERS_DB.PUBLIC;
+
+SHOW TASKS;
+EXECUTE TASK COPY_CUSTOMER_DATA_EVERY_2MIN;
+
+EXECUTE TASK WOODCHUCK_JSON_CUSTOMER_ORDERS_DB.PUBLIC.copy_customer_data_every_2min;
+
+        --ДАВАНЕ НА ПРАВО НА РОЛЯ
+
+GRANT
+    EXECUTE TASK
+ON ACCOUNT
+    TO ROLE RABBIT__ROLE;
+
+        --СЪЗДАВАНЕ НА ПРОЦЕДУРА ЗА СЪЗДАВАНЕ НА ПРАВА 
+        
+CREATE PROCEDURE _cool_db_name.grant_task_execute_to_role(
+ROLE_NAME VARCHAR
+)
+RETURNS VARCHAR   
+    BEGIN
+
+        -- GRANT
+        --     EXECUTE TASK
+        -- ON ACCOUNT
+        --     TO ROLE IDENTIFIER(:ROLE_NAME);
+
+    EXECUTE IMMEDIATE 'GRANT EXECUTE TASK ON ACCOUNT TO ROLE ' || :ROLE_NAME;
+    
+    END;
+
+CALL _cool_db_name.grant_task_execute_to_role('WOODCHUK__ROLE');
+
+
+
+*/
 
 INSERT INTO raw_customers_json(item)
 SELECT parse_json(*)
@@ -90,7 +159,6 @@ USE SCHEMA WOODCHUCK_JSON_CUSTOMERS_ORDERS_DB.PARSED_DATA;
 CREATE OR REPLACE TABLE td_order_items_sum AS
 SELECT count(*) as item_count, SUM(QUANTITY*PRICE) as total_amount
 FROM td_order_items
-
 
 -- 11. Изтриите СУРОВИТЕ таблици.
 USE SCHEMA WOODCHUCK_JSON_CUSTOMER_ORDERS_DB.RAW_DATA;
