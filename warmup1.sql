@@ -95,8 +95,8 @@ FROM td_order_items;
 -- 11. Изтриите СУРОВИТЕ таблици.
 USE SCHEMA WOODCHUCK_JSON_CUSTOMER_ORDERS_DB.RAW_DATA;
 
-DROP TABLE raw_customers_json;
-DROP TABLE raw_orders_json;
+TRUNCATE TABLE IF EXISTS raw_customers_json;
+TRUNCATE TABLE IF EXISTS raw_orders_json;
 
 
 
